@@ -1,9 +1,6 @@
 package es.alvaroweb.ircamerareader.wscameraview;
 
 import android.util.Log;
-
-import java.util.Iterator;
-
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -45,8 +42,6 @@ public class WebsocketConnection extends WebSocketListener {
     public void onMessage(WebSocket webSocket, ByteString bytes) {
         super.onMessage(webSocket, bytes);
         log("onMessage: " + bytes.size() + "bytes received");
-        log("onMessage: " + bytes.hex());
-        log("onMessage: " + bytes.asByteBuffer());
         callback.receiveRows(bytes);
     }
 

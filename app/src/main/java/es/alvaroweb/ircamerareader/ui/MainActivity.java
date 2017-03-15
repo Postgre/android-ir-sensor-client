@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void ButtonClick(View view){
-        image.setImage(view);
+        image.setRandomImage(view);
     }
 
 

@@ -24,7 +24,6 @@ import okio.ByteString;
  */
 
 public class HighCamera {
-    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static final int TELEMETRY_ROW_NUMBER = 240;
     private static final int BYTES_IN_ROW_NUMBER = 81;
     private static final String DEBUG_TAG = HighCamera.class.getSimpleName();
@@ -88,32 +87,6 @@ public class HighCamera {
         return b & 0xff;
     }
 
-    interface FrameCallback{
-        void frameReady(byte[][] frame);
-    }
-
-//    private byte[] hexStringToByteArray(String s) {
-//        int len = s.length();
-//        if(!(len % 2 == 0)){
-//            Log.e(DEBUG_TAG, "string is not even");
-//        }
-//        byte[] data = new byte[len / 2];
-//        for (int i = 0; i < len; i += 2) {
-//            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-//                    + Character.digit(s.charAt(i+1), 16));
-//        }
-//        return data;
-//    }
-//
-//    public static String bytesToHex(byte[] bytes) {
-//        char[] hexChars = new char[bytes.length * 2];
-//        for ( int j = 0; j < bytes.length; j++ ) {
-//            int v = bytes[j] & 0xFF;
-//            hexChars[j * 2] = hexArray[v >>> 4];
-//            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-//        }
-//        return new String(hexChars);
-//    }
 
     private List<byte[]> delimiterData(byte[] array, byte[] delimiter) {
         List<byte[]> byteArrays = new LinkedList<>();
@@ -134,5 +107,9 @@ public class HighCamera {
         }
         byteArrays.add(Arrays.copyOfRange(array, begin, array.length));
         return byteArrays;
+    }
+
+    interface FrameCallback{
+        void frameReady(byte[][] frame);
     }
 }

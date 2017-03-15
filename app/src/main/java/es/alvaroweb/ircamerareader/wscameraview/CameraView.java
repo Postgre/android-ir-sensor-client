@@ -53,7 +53,6 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
     }
 
     public void setImage(byte[][] array){
-//        cleanImage();
         boolean dimensionMaches = array[0].length == bitmap.getWidth() &&
                 array.length == bitmap.getHeight();
 
@@ -69,7 +68,7 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
             }
         }
     }
-    public void setImage(View view){
+    public void setRandomImage(View view){
         byte[][] arr = new byte[sizey][sizex];
         for(int i = 0; i < sizey; i++){
             for(int j = 0; j < sizex; j++){
