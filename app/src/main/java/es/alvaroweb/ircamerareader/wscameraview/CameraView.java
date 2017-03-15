@@ -10,10 +10,9 @@ import android.util.Log;
 import android.view.View;
 import android.support.v7.widget.AppCompatImageView;
 
-import org.java_websocket.WebSocket;
-
-import java.net.URISyntaxException;
 import java.util.Random;
+
+import okio.ByteString;
 
 /**
  * Copyright (C) 2016 Alvaro Bolanos Rodriguez
@@ -43,12 +42,14 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
 
     private void initBitmap(){
         bitmap = Bitmap.createBitmap(sizex, sizey, Bitmap.Config.ARGB_8888);
-        highCamera = new HighCamera(160, 120, this);
+        highCamera = new HighCamera(this);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        // Bitmap has to be set here. and this callback is called from UI
+        this.setImageBitmap(bitmap);
     }
 
     public void setImage(byte[][] array){
@@ -67,7 +68,6 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
                 bitmap.setPixel(j,i, Color.rgb(pixel, pixel, pixel));
             }
         }
-        this.setImageBitmap(bitmap);
     }
     public void setImage(View view){
         byte[][] arr = new byte[sizey][sizex];
@@ -96,22 +96,16 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
     }
 
     public void connectTo(String uri) {
-        try {
             Log.d(CameraView.class.getSimpleName(), "uri received: " + uri);
             websocketConnection = new WebsocketConnection(uri, this);
-            websocketConnection.connect();
-//            WebSocket connection = websocketConnection.getConnection();
-//            if(connection.isConnecting()){
-//                Log.d(DEBUG_TAG, "websocket is connecting");
-//            }
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
-    public void receiveRow(byte[] row) {
-        highCamera.processRow(row);
+    public void receiveRows(ByteString data) {
+        if(data.size() < 1){
+            return;
+        }
+        highCamera.consumeData(data);
     }
 
     @Override

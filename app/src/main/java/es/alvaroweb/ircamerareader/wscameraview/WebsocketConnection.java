@@ -2,70 +2,81 @@ package es.alvaroweb.ircamerareader.wscameraview;
 
 import android.util.Log;
 
-import org.java_websocket.WebSocket;
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.handshake.ServerHandshake;
+import java.util.Iterator;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.channels.NotYetConnectedException;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
 
 
 /**
  * Copyright (C) 2016 Alvaro Bolanos Rodriguez
  */
 
-public class WebsocketConnection extends WebSocketClient {
+public class WebsocketConnection extends WebSocketListener {
     private static final String DEBUG_TAG = WebsocketConnection.class.getSimpleName();
+    private final WebSocket webSocket;
+    private final Request requestToServer;
     private OnReceiveRow callback;
-    public WebsocketConnection(String serverURI, OnReceiveRow callback) throws URISyntaxException {
-        super(new URI(serverURI));
+    public WebsocketConnection(String serverURI, OnReceiveRow callback) {
+        OkHttpClient client = new OkHttpClient();
+        requestToServer = new Request.Builder().url(serverURI).build();
+        webSocket = client.newWebSocket(requestToServer, this);
         this.callback = callback;
     }
 
-
     @Override
-    public void onOpen(ServerHandshake h) {
-        log("request: " + h.getHttpStatus() + ", " + h.getHttpStatusMessage());
+    public void onOpen(WebSocket webSocket, Response response) {
+        super.onOpen(webSocket, response);
+        log("onOpen: " + response.message());
     }
 
-
-
     @Override
-    public void onMessage(ByteBuffer bytes) {
-        log(bytes.toString());
-        if(bytes.hasArray()){
-            callback.receiveRow(bytes.array());
-        }
+    public void onMessage(WebSocket webSocket, String text) {
+        super.onMessage(webSocket, text);
+        log("onMessage: " + text);
 
     }
 
     @Override
-    public void onMessage(String message) {
-        log(message);
+    public void onMessage(WebSocket webSocket, ByteString bytes) {
+        super.onMessage(webSocket, bytes);
+        log("onMessage: " + bytes.size() + "bytes received");
+        log("onMessage: " + bytes.hex());
+        log("onMessage: " + bytes.asByteBuffer());
+        callback.receiveRows(bytes);
     }
 
     @Override
-    public void onClose(int code, String reason, boolean remote) {
-        log(reason + " code:" + code);
-    }
-
-//    @Override
-//    public void onWebsocketClosing(WebSocket conn, int code, String reason, boolean remote) {
-//        super.onWebsocketClosing(conn, code, reason, remote);
-//        log(reason + " code:" + code);
-//    }
-
-    @Override
-    public void onError(Exception ex) {
-        Log.e(DEBUG_TAG, ex.getMessage());
+    public void onClosing(WebSocket webSocket, int code, String reason) {
+        super.onClosing(webSocket, code, reason);
+        log("onClosing: " + reason + ", code:" + code);
     }
 
     @Override
-    public void send(byte[] data) throws NotYetConnectedException {
-        // process command or somthing
-        super.send(data);
+    public void onClosed(WebSocket webSocket, int code, String reason) {
+        super.onClosed(webSocket, code, reason);
+        log("onClosed: " + reason + ", code:" + code);
+    }
+
+    @Override
+    public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+        super.onFailure(webSocket, t, response);
+        Log.e(DEBUG_TAG, "onFailure: " + t.getMessage());
+        t.printStackTrace();
+
+    }
+
+    public void send(byte[] bytes){
+        ByteString byteString = ByteString.of(bytes);
+        webSocket.send(byteString);
+    }
+
+    public void close(){
+        webSocket.close(1000, "fulfilled");
     }
 
     private void log(String s){
@@ -73,6 +84,6 @@ public class WebsocketConnection extends WebSocketClient {
     }
 
     interface OnReceiveRow{
-        void receiveRow(byte[] bytes);
+        void receiveRows(ByteString bytes);
     }
 }

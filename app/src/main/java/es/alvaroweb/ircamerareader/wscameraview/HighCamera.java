@@ -1,4 +1,13 @@
 package es.alvaroweb.ircamerareader.wscameraview;
+import android.util.Log;
+
+import com.google.common.primitives.Bytes;
+
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+
+import okio.ByteString;
 
 /**
  * 00 01 02 04 ------
@@ -15,39 +24,41 @@ package es.alvaroweb.ircamerareader.wscameraview;
  */
 
 public class HighCamera {
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
     private static final int TELEMETRY_ROW_NUMBER = 240;
-    private static final int BYTES_IN_ROW_NUMBER = 80;
-//    def process_row(self, row):
-//            if(len(row) < EIGHT_BYTES_ROW):
-//            return
-//    n_row = row[0]
-//
-//            if n_row < Y_LENGTH:  # normal row
-//            try:
-//                    for indx, val in enumerate(row[1:]):
-//    f_row = (n_row)/2
-//    f_col = (n_row) % 2 * 80 + indx
-//    self.frame_arr[f_row][f_col] = val
-//
-//    except ValueError and IndexError as e:
-//            logging.warn("row size is not suitable: %s", e.message)
-//            else:  # telemetry row
-//            self.process_telemetry(row)
-//            self.process_frame()
+    private static final int BYTES_IN_ROW_NUMBER = 81;
+    private static final String DEBUG_TAG = HighCamera.class.getSimpleName();
 
     private byte[][] frame;
     FrameCallback frameCallback;
+    private byte[] remains;
+    private byte[] delimiter = new byte[]{-1,-1,-1};
 
-    public HighCamera(int xsize, int ysize, FrameCallback callback) {
-        frame = new byte[xsize][ysize];
+    public HighCamera(FrameCallback callback) {
+        frame = new byte[120][160];
         frameCallback = callback;
+        remains = new byte[]{};
     }
+
+    public void consumeData(ByteString data){
+
+        List<byte[]> pieces = delimiterData(Bytes.concat(remains, data.toByteArray()), delimiter);
+
+        int lastIndex = pieces.size() - 1;
+        for(int i = 0; i < pieces.size(); i++){
+            if(i == lastIndex) continue;
+            processRow(pieces.get(i));
+        }
+        remains = pieces.get(lastIndex);
+    }
+
 
     public void processRow(byte[] row){
         if(row.length < BYTES_IN_ROW_NUMBER){
             return;
         }
         int rowNumber = byteToInt(row[0]);
+        Log.d(DEBUG_TAG, "rownumber:"+rowNumber);
         if (rowNumber < TELEMETRY_ROW_NUMBER){
            getFrameData(rowNumber, row);
         }else{
@@ -61,10 +72,15 @@ public class HighCamera {
     }
 
     private void getFrameData(int rowNumber, byte[] row){
-        for(int ind = 1; ind < BYTES_IN_ROW_NUMBER; ind++){
+        for(int i = 0; i < BYTES_IN_ROW_NUMBER - 1; i++){
+            int ind = i + 1;
             int frameRow = rowNumber / 2;
-            int frameCol = rowNumber % 2 * BYTES_IN_ROW_NUMBER + ind;
+            int frameCol = rowNumber % 2 * (BYTES_IN_ROW_NUMBER -1)+ ind;
+            try{
             frame[frameRow][frameCol] = row[ind];
+            }catch (ArrayIndexOutOfBoundsException e){
+                Log.e(DEBUG_TAG, e.getLocalizedMessage());
+            }
         }
     }
 
@@ -74,5 +90,49 @@ public class HighCamera {
 
     interface FrameCallback{
         void frameReady(byte[][] frame);
+    }
+
+//    private byte[] hexStringToByteArray(String s) {
+//        int len = s.length();
+//        if(!(len % 2 == 0)){
+//            Log.e(DEBUG_TAG, "string is not even");
+//        }
+//        byte[] data = new byte[len / 2];
+//        for (int i = 0; i < len; i += 2) {
+//            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+//                    + Character.digit(s.charAt(i+1), 16));
+//        }
+//        return data;
+//    }
+//
+//    public static String bytesToHex(byte[] bytes) {
+//        char[] hexChars = new char[bytes.length * 2];
+//        for ( int j = 0; j < bytes.length; j++ ) {
+//            int v = bytes[j] & 0xFF;
+//            hexChars[j * 2] = hexArray[v >>> 4];
+//            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+//        }
+//        return new String(hexChars);
+//    }
+
+    private List<byte[]> delimiterData(byte[] array, byte[] delimiter) {
+        List<byte[]> byteArrays = new LinkedList<>();
+        if (delimiter.length == 0) {
+            return byteArrays;
+        }
+        int begin = 0;
+
+        outer:
+        for (int i = 0; i < array.length - delimiter.length + 1; i++) {
+            for (int j = 0; j < delimiter.length; j++) {
+                if (array[i + j] != delimiter[j]) {
+                    continue outer;
+                }
+            }
+            byteArrays.add(Arrays.copyOfRange(array, begin, i));
+            begin = i + delimiter.length;
+        }
+        byteArrays.add(Arrays.copyOfRange(array, begin, array.length));
+        return byteArrays;
     }
 }

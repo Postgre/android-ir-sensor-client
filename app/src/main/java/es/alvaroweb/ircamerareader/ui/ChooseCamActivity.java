@@ -19,7 +19,7 @@ public class ChooseCamActivity extends AppCompatActivity {
     private Intent intent;
     private ArrayAdapter<String> adapter;
     private String produc = "ws://cloudwebsocket2-ir-cloud.espoo-apps.ilab.cloud/client?pass=30022&camera_name=";
-    private String devel = "ws://cloudwebsocket2-devel-ir-cloud.espoo-apps.ilab.cloud/client?pass=30022&camera_name=";
+    private String devel = "ws://cloudwebsocket-devel-ir-cloud.espoo-apps.ilab.cloud/client?pass=30022&camera_name=";
     private String uri = devel;
 
     @Override
