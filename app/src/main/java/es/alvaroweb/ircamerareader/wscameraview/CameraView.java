@@ -64,7 +64,8 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
         for (int i = 0; i < bitmap.getHeight(); i++) {
             for(int j =0; j < bitmap.getWidth(); j++) {
                 int pixel = convertByteToInt(array[i][j]);
-                bitmap.setPixel(j,i, Color.rgb(pixel, pixel, pixel));
+                int ii = bitmap.getHeight() - i - 1; // to invert the image
+                bitmap.setPixel(j,ii, Color.rgb(pixel, pixel, pixel));
             }
         }
     }

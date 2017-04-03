@@ -8,6 +8,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 
 import es.alvaroweb.ircamerareader.CamerasInfo;
 import es.alvaroweb.ircamerareader.Constants;
@@ -31,6 +32,7 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
     private String uri = devel;
     private HttpConnection httpConnection;
     private Button button;
+    private ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,11 +41,13 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
 
         listView = (ListView) findViewById(R.id.cameras_list_view);
         button = (Button) findViewById(R.id.environment_button);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        progressBar.setVisibility(View.GONE);
 
         intent = new Intent(this, MainActivity.class);
         httpConnection = new HttpConnection(this);
 
-        initClientArray(button.getText().toString());
+//        initClientArray(button.getText().toString());
     }
 
     private void initList(){
@@ -75,15 +79,16 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
 
     public void switchUrl(View v){
         Button button = (Button)v;
-        initClientArray(button.getText().toString());
         if(uri.equals(produc)){
             uri = devel;
             button.setText("devel");
         }else{
             uri = produc;
             button.setText("produc");
-
         }
+        initClientArray(button.getText().toString());
+        progressBar.setVisibility(View.VISIBLE);
+        button.setEnabled(false);
     }
 
     @Override
@@ -97,6 +102,8 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
             @Override
             public void run() {
                 initList();
+                button.setEnabled(true);
+                progressBar.setVisibility(View.GONE);
             }
         });
 
