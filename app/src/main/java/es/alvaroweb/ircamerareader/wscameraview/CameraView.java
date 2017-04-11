@@ -18,16 +18,17 @@ import okio.ByteString;
  * Copyright (C) 2016 Alvaro Bolanos Rodriguez
  */
 
-public class CameraView extends AppCompatImageView implements WebsocketConnection.OnReceiveRow, HighCamera.FrameCallback {
+public class CameraView extends AppCompatImageView implements WebsocketConnection.OnReceiveRow, HighCamera.FrameCallback, View.OnClickListener {
 
     private static final String DEBUG_TAG = CameraView.class.getSimpleName();
+    private static Random random = new Random();
     private Bitmap bitmap;
     private int sizex = 160;
     private int sizey = 120;
-    private static Random random = new Random();
     private WebsocketConnection websocketConnection;
     private HighCamera highCamera;
     private Runnable t;
+    private boolean reversed = true;
 
 
     public CameraView(Context context) {
@@ -40,9 +41,10 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
         initBitmap();
     }
 
-    private void initBitmap(){
+    private void initBitmap() {
         bitmap = Bitmap.createBitmap(sizex, sizey, Bitmap.Config.ARGB_8888);
         highCamera = new HighCamera(this);
+        this.setOnClickListener(this);
     }
 
     @Override
@@ -52,57 +54,66 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
         this.setImageBitmap(bitmap);
     }
 
-    public void setImage(byte[][] array){
+
+    public void setImage(byte[][] array) {
         boolean dimensionMaches = array[0].length == bitmap.getWidth() &&
                 array.length == bitmap.getHeight();
 
-        if(!dimensionMaches){
-            Log.d("image","doesn't match the dimension");
+        if (!dimensionMaches) {
+            Log.d("image", "doesn't match the dimension");
             return;
         }
 
         for (int i = 0; i < bitmap.getHeight(); i++) {
-            for(int j =0; j < bitmap.getWidth(); j++) {
+            for (int j = 0; j < bitmap.getWidth(); j++) {
                 int pixel = convertByteToInt(array[i][j]);
-                int ii = bitmap.getHeight() - i - 1; // to invert the image
-                bitmap.setPixel(j,ii, Color.rgb(pixel, pixel, pixel));
+                if (reversed) {
+                    bitmap.setPixel(j, bitmap.getHeight() - i - 1, Color.rgb(pixel, pixel, pixel));
+                } else {
+                    bitmap.setPixel(j, i, Color.rgb(pixel, pixel, pixel));
+                }
             }
         }
     }
-    public void setRandomImage(View view){
+
+    public void setRandomImage(View view) {
         byte[][] arr = new byte[sizey][sizex];
-        for(int i = 0; i < sizey; i++){
-            for(int j = 0; j < sizex; j++){
-                arr[i][j] = ((byte)randint(Byte.MIN_VALUE, Byte.MAX_VALUE));
+        for (int i = 0; i < sizey; i++) {
+            for (int j = 0; j < sizex; j++) {
+                arr[i][j] = ((byte) randint(Byte.MIN_VALUE, Byte.MAX_VALUE));
             }
         }
         setImage(arr);
     }
 
-    public void cleanImage(){
+    public void cleanImage() {
         for (int i = 0; i < bitmap.getWidth(); i++) {
-            for(int j =0; j < bitmap.getHeight(); j++) {
+            for (int j = 0; j < bitmap.getHeight(); j++) {
                 bitmap.setPixel(i, j, Color.rgb(255, 255, 255));
             }
         }
     }
 
-    private int convertByteToInt(byte b){
+    private int convertByteToInt(byte b) {
         return b & 0xff;
     }
 
-    private int randint(int min, int max){
+    private int randint(int min, int max) {
         return random.nextInt(max + 1 - min) + min;
     }
 
     public void connectTo(String uri) {
-            Log.d(CameraView.class.getSimpleName(), "uri received: " + uri);
-            websocketConnection = new WebsocketConnection(uri, this);
+        Log.d(CameraView.class.getSimpleName(), "uri received: " + uri);
+        websocketConnection = new WebsocketConnection(uri, this);
+    }
+
+    public void stopWebsocket() {
+        websocketConnection.close();
     }
 
     @Override
     public void receiveRows(ByteString data) {
-        if(data.size() < 1){
+        if (data.size() < 1) {
             return;
         }
         highCamera.consumeData(data);
@@ -113,11 +124,13 @@ public class CameraView extends AppCompatImageView implements WebsocketConnectio
         this.setImage(frame);
     }
 
-    public void stopWebsocket() {
-        websocketConnection.close();
+
+    @Override
+    public void onClick(View view) {
+        reversed = !reversed;
     }
 
-    public interface UpdateArray{
+    public interface UpdateArray {
         void updateArray();
     }
 }

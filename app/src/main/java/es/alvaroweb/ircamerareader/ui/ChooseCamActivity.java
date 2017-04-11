@@ -10,12 +10,12 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 
+import java.util.List;
+
 import es.alvaroweb.ircamerareader.CamerasInfo;
-import es.alvaroweb.ircamerareader.Constants;
 import es.alvaroweb.ircamerareader.HttpConnection;
 import es.alvaroweb.ircamerareader.R;
 
-import static android.R.id.list;
 import static es.alvaroweb.ircamerareader.Constants.DEVEL_URL;
 import static es.alvaroweb.ircamerareader.Constants.PARAMETERS;
 import static es.alvaroweb.ircamerareader.Constants.PRODUCT_URL;
@@ -24,9 +24,9 @@ import static es.alvaroweb.ircamerareader.Constants.PRODUCT_URL;
 public class ChooseCamActivity extends AppCompatActivity implements HttpConnection.AResponse{
 
     private ListView listView;
-    private String[] listArr;
+    private List<CamerasInfo.Camera> cameraList;
     private Intent intent;
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<CamerasInfo.Camera> adapter;
     private String produc = "ws://" + PRODUCT_URL + "/client" + PARAMETERS;
     private String devel = "ws://" + DEVEL_URL + "/client" + PARAMETERS;
     private String uri = devel;
@@ -51,13 +51,13 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
     }
 
     private void initList(){
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, listArr);
+        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, cameraList);
         listView.setAdapter(adapter);
 
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                String name = listArr[i];
+                String name = cameraList.get(i).getName();
                 intent.putExtra(MainActivity.URI_STRING, uri+name);
                 startActivity(intent);
             }
@@ -65,7 +65,6 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
     }
 
     private void initClientArray(String textButton) {
-        listArr = new String[0];
         try {
             if (textButton == "devel") {
                 httpConnection.getCamsInfo(DEVEL_URL);
@@ -93,11 +92,7 @@ public class ChooseCamActivity extends AppCompatActivity implements HttpConnecti
 
     @Override
     public void getResponse(CamerasInfo camerasInfo) {
-        int count = camerasInfo.getCount();
-        listArr = new String[count];
-        for (CamerasInfo.Camera c : camerasInfo.getCams()) {
-            listArr[count - 1] = c.getName();
-        }
+        cameraList = camerasInfo.getCams();
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

@@ -21,6 +21,15 @@ public class CamerasInfo {
         public String getIp() {
             return ip;
         }
+
+        @Override
+        public String toString() {
+            String[] ips = ip.split(",");
+            if(ips.length == 0)
+                return name + " - " + ip;
+            else
+                return name + " - " + ips[0];
+        }
     }
 
     public int getCount() {
